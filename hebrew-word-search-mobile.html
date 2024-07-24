@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תפזורת - החופש הגדול</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .game-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #instructions {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #difficulty-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        #difficulty-selector button {
+            margin: 0 10px;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #timer {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #grid {
+            display: grid;
+            gap: 2px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .grid-cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            user-select: none;
+        }
+        .selected {
+            background-color: #a0a0a0;
+        }
+        .found {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #word-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .word-item {
+            padding: 5px 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+        }
+        .word-found {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+        #feedback {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>תפזורת - החופש הגדול</h1>
+        <div id="instructions">
+            הוראות: מוצאים מילה המוסתרת בתפזורת, לוחצים על האות הראשונה, גוררים לכיוון הרצוי ומשחררים.
+        </div>
+        <div id="difficulty-selector">
+            <button onclick="setDifficulty('easy')">קל (10x10)</button>
+            <button onclick="setDifficulty('medium')">בינוני (15x15)</button>
+            <button onclick="setDifficulty('hard')">קשה (20x20)</button>
+        </div>
+        <div id="timer">זמן: 00:00</div>
+        <div id="grid"></div>
+        <div id="word-list"></div>
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        const words = ['חופים', 'בריכה', 'גלידה', 'מגלשה', 'קייטנה', 'חופשות', 'טיולים', 'מסעות', 'אוהלים', 'לונהפארק', 'כדור', 'משחק'];
+        let currentDifficulty = 'medium';
+        let grid = [];
+        let selectedCells = [];
+        let foundWords = [];
+        let startTime;
+        let currentDirection = null;
+
+        function setDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            initializeGame();
+        }
+
+        function initializeGame() {
+            const gridSize = currentDifficulty === 'easy' ? 10 : currentDifficulty === 'medium' ? 15 : 20;
+            grid = createGrid(gridSize);
+            placeWords(grid, words);
+            fillEmptyCells(grid);
+            renderGrid(grid);
+            renderWordList(words);
+            foundWords = [];
+            selectedCells = [];
+            startTimer();
+        }
+
+        function createGrid(size) {
+            return Array(size).fill().map(() => Array(size).fill(''));
+        }
+
+        function placeWords(grid, words) {
+            const directions = [
+                [0, 1], [1, 0], [1, 1], [-1, 1],
+                [0, -1], [-1, 0], [-1, -1], [1, -1]
+            ];
+
+            for (const word of words) {
+                let placed = false;
+                while (!placed) {
+                    const direction = directions[Math.floor(Math.random() * directions.length)];
+                    const [startX, startY] = [
+                        Math.floor(Math.random() * grid.length),
+                        Math.floor(Math.random() * grid[0].length)
+                    ];
+
+                    if (canPlaceWord(grid, word, startX, startY, direction)) {
+                        placeWord(grid, word, startX, startY, direction);
+                        placed = true;
+                    }
+                }
+            }
+        }
+
+        function canPlaceWord(grid, word, startX, startY, [dx, dy]) {
+            for (let i = 0; i < word.length; i++) {
+                const x = startX + i * dx;
+                const y = startY + i * dy;
+                if (x < 0 || x >= grid.length || y < 0 || y >= grid[0].length ||
+                    (grid[x][y] !== '' && grid[x][y] !== word[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function placeWord(grid, word, startX, startY, [dx, dy]) {
+            for (let i = 0; i < word.length; i++) {
+                const x = startX + i * dx;
+                const y = startY + i * dy;
+                grid[x][y] = word[i];
+            }
+        }
+
+        function fillEmptyCells(grid) {
+            const hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת';
+            for (let i = 0; i < grid.length; i++) {
+                for (let j = 0; j < grid[i].length; j++) {
+                    if (grid[i][j] === '') {
+                        grid[i][j] = hebrewLetters[Math.floor(Math.random() * hebrewLetters.length)];
+                    }
+                }
+            }
+        }
+
+        function renderGrid(grid) {
+            const gridElement = document.getElementById('grid');
+            gridElement.innerHTML = '';
+            gridElement.style.gridTemplateColumns = `repeat(${grid.length}, 30px)`;
+
+            for (let i = 0; i < grid.length; i++) {
+                for (let j = 0; j < grid[i].length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.textContent = grid[i][j];
+                    cell.dataset.x = i;
+                    cell.dataset.y = j;
+                    cell.addEventListener('mousedown', startSelection);
+                    cell.addEventListener('mouseover', continueSelection);
+                    cell.addEventListener('touchstart', startSelection);
+                    cell.addEventListener('touchmove', handleTouchMove);
+                    gridElement.appendChild(cell);
+                }
+            }
+
+            document.addEventListener('mouseup', endSelection);
+            document.addEventListener('touchend', endSelection);
+        }
+
+        function renderWordList(words) {
+            const wordListElement = document.getElementById('word-list');
+            wordListElement.innerHTML = '';
+            for (const word of words) {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word-item';
+                wordElement.textContent = word;
+                wordListElement.appendChild(wordElement);
+            }
+        }
+
+        function startSelection(event) {
+            event.preventDefault();
+            selectedCells = [event.target];
+            event.target.classList.add('selected');
+            currentDirection = null;
+        }
+
+        function continueSelection(event) {
+            if (event.buttons === 1 && !selectedCells.includes(event.target)) {
+                const lastCell = selectedCells[selectedCells.length - 1];
+                const dx = event.target.dataset.x - lastCell.dataset.x;
+                const dy = event.target.dataset.y - lastCell.dataset.y;
+
+                if (currentDirection === null) {
+                    currentDirection = [Math.sign(dx), Math.sign(dy)];
+                }
+
+                if (isValidNextCell(lastCell, event.target)) {
+                    selectedCells.push(event.target);
+                    event.target.classList.add('selected');
+                }
+            }
+        }
+
+        function handleTouchMove(event) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (cell && cell.classList.contains('grid-cell') && !selectedCells.includes(cell)) {
+                const lastCell = selectedCells[selectedCells.length - 1];
+                const dx = cell.dataset.x - lastCell.dataset.x;
+                const dy = cell.dataset.y - lastCell.dataset.y;
+
+                if (currentDirection === null) {
+                    currentDirection = [Math.sign(dx), Math.sign(dy)];
+                }
+
+                if (isValidNextCell(lastCell, cell)) {
+                    selectedCells.push(cell);
+                    cell.classList.add('selected');
+                }
+            }
+        }
+
+        function isValidNextCell(lastCell, nextCell) {
+            const dx = nextCell.dataset.x - lastCell.dataset.x;
+            const dy = nextCell.dataset.y - lastCell.dataset.y;
+            return (Math.sign(dx) === currentDirection[0] && Math.sign(dy) === currentDirection[1]);
+        }
+
+        function endSelection() {
+            const selectedWord = selectedCells.map(cell => cell.textContent).join('');
+            const reversedWord = selectedWord.split('').reverse().join('');
+
+            if (words.includes(selectedWord) || words.includes(reversedWord)) {
+                const wordToMark = words.includes(selectedWord) ? selectedWord : reversedWord;
+                markWordAsFound(wordToMark);
+                selectedCells.forEach(cell => cell.classList.add('found'));
+            }
+
+            selectedCells.forEach(cell => cell.classList.remove('selected'));
+            selectedCells = [];
+            currentDirection = null;
+
+            checkGameCompletion();
+        }
+
+        function markWordAsFound(word) {
+            if (!foundWords.includes(word)) {
+                foundWords.push(word);
+                updateWordList();
+            }
+        }
+
+        function updateWordList() {
+            const wordItems = document.querySelectorAll('.word-item');
+            wordItems.forEach(item => {
+                if (foundWords.includes(item.textContent)) {
+                    item.classList.add('word-found');
+                }
+            });
+        }
+
+        function checkGameCompletion() {
+            if (foundWords.length === words.length) {
+                const endTime = new Date();
+                const timeTaken = Math.floor((endTime - startTime) / 1000);
+                document.getElementById('feedback').textContent = `כל הכבוד! סיימת את המשחק תוך ${timeTaken} שניות!`;
+            }
+        }
+
+        function startTimer() {
+            startTime = new Date();
+            updateTimer();
+        }
+
+        function updateTimer() {
+            const currentTime = new Date();
+            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+            const minutes = Math.floor(elapsedTime / 60);
+            const seconds = elapsedTime % 60;
+            document.getElementById('timer').textContent = `זמן: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            setTimeout(updateTimer, 1000);
+        }
+
+        initializeGame();
+    </script>
+</body>
+</html>
