@@ -100,9 +100,9 @@
             הוראות: מוצאים מילה המוסתרת בתפזורת, לוחצים על האות הראשונה, גוררים לכיוון הרצוי ומשחררים.
         </div>
         <div id="difficulty-selector">
-            <button onclick="setDifficulty('easy')">קל (10x10)</button>
-            <button onclick="setDifficulty('medium')">בינוני (15x15)</button>
-            <button onclick="setDifficulty('hard')">קשה (20x20)</button>
+            <button onclick="setDifficulty('easy')">קל</button>
+            <button onclick="setDifficulty('medium')">בינוני</button>
+            <button onclick="setDifficulty('hard')">קשה</button>
         </div>
         <div id="timer">זמן: 00:00</div>
         <div id="grid"></div>
@@ -112,7 +112,7 @@
 
     <script>
         const words = ['חופים', 'בריכה', 'גלידה', 'מגלשה', 'קייטנה', 'חופשות', 'טיולים', 'מסעות', 'אוהלים', 'לונהפארק', 'כדור', 'משחק'];
-        let currentDifficulty = 'medium';
+        let currentDifficulty = 'easy';
         let grid = [];
         let selectedCells = [];
         let foundWords = [];
